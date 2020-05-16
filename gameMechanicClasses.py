@@ -57,7 +57,7 @@ class Items:
 
     def __init__(self, name, itemType, stats):
         self.name = name
-        self.type = itemType
+        self.itemType = itemType
         self.stats = stats
 
 

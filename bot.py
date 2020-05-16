@@ -202,6 +202,26 @@ async def createCharacter(ctx):
     except IndexError:
         await ctx.send("Yeah, you messed up your message spacing. Try again?")
 
+#ALL THE SPELLS AND ITEMS REGISTRATION
+@client.command(aliases=["rg"])
+async def register(ctx):
+    await ctx.send("Are you registering a new spell or item?")
+    def check(m):
+        return m.author == ctx.message.author
+    try:
+        msg = await client.wait_for("message", check=check, timeout=30)
+
+
+    except asyncio.TimeoutError:
+        ctx.send("Timeout: Please try again!\nWe recommend you have one written down before you start registration!")
+
+async def regItem(ctx):
+    def check(m):
+        return m.author == ctx.message.author
+    await ctx.send("Please enter your item name")
+    msg = await client.wait_for("message", check=check, timeout=30)
+    name = msg.content
+    awa
 def raceBonusDesc(race):
     if race.lower() == "human":
         return "1 additional point in every attribute except luck."
@@ -329,4 +349,4 @@ async def sayHi(ctx):
 
 
 
-client.run('')
+client.run('NTU4NDY1NTU0MDIxNzQ0NjQw.Xqu7Rg.LDDTUYl4tznCZwgH-L0aTwYJ-yY')

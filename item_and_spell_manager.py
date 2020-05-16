@@ -24,6 +24,41 @@ def LoadSpell(spellName:str):
                                       loaded["necessity"], loaded["damage"])
     return spell
 
-def LoadAllSpells():
+def LoadAllSpells() -> dict:
     path = os.getcwd() + "\\Spell Compendium"
     dir_list = os.listdir()
+    fullSpellBook = {}
+    for fp in dir_list:
+        with open(fp, "r") as filename:
+            loaded = json.load(fp)
+            spell = gameMechanicClasses.Spell(loaded["name"], loaded["desc"], loaded["level"], loaded["castTime"],
+                                              loaded["necessity"], loaded["damage"])
+            fullSpellBook[spell.name] = spell
+
+    return fullSpellBook
+
+
+def AddItem(item: gameMechanicClasses.Items):
+    save = {}
+    save["name"] = item.name
+    save["itemType"] = item.itemType
+    save["stats"] = item.stats
+
+def LoadItem(itemName:str):
+    filename = "C:\\Users\\Chaeyoung\\Documents\\Chaeyoung\\Discord Bot\\Spell Compendium\\" + itemName + ".json"
+    fp = open(filename, "r")
+    loaded = json.load(fp)
+    item = gameMechanicClasses.Item(loaded["name"], loaded["itemType"], loaded["stats"])
+    return item
+
+def LoadAllItems() -> dict:
+    path = os.getcwd() + "\\Item Compendium"
+    dir_list = os.listdir()
+    fullItemBook = {}
+    for fp in dir_list:
+        with open(fp, "r") as filename:
+            loaded = json.load(fp)
+            item = gameMechanicClasses.Items(loaded["name"], loaded["itemType"], loaded["stats"])
+            fullItemBook[item.name] = item
+
+    return fullItemBook
