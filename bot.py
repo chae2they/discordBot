@@ -584,5 +584,5 @@ async def sayHi(ctx):
 
 
 
-client.run('NTU4NDY1NTU0MDIxNzQ0NjQw.Xqu7Rg.LDDTUYl4tznCZwgH-L0aTwYJ-yY')
+client.run('')
 
