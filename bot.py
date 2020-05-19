@@ -1,8 +1,11 @@
 from discord.ext import commands
 import diceRolls
 import character_manager
+import item_and_spell_manager
+import gameMechanicClasses
 import asyncio
 client = commands.Bot(command_prefix ='!')
+
 
 
 #EXAMPLE COMMANDS
@@ -54,6 +57,7 @@ async def d100(ctx):
 
 #GAME MANAGEMENT
 loaded_characters = {}
+loaded_enemies = {}
 loaded_spells = {}
 loaded_items = {}
 creatingCharacter = False
@@ -104,8 +108,8 @@ async def createCharacter(ctx):
         #NAMING PHASE
         await asyncio.sleep(0.5)
         await ctx.send("This is a story of a hero/heroine who people referred to as: \n(What is the name of your character?)")
-        msg = await client.wait_for("message", check=check, timeout=60)
-        name = msg.content
+        msg = await client.wait_for("message", check=check, timeout=300)
+        name = str(msg.content)
         await asyncio.sleep(0.5)
         await ctx.send("Name: " + name)
 
@@ -117,7 +121,7 @@ async def createCharacter(ctx):
         await ctx.send("> **Possible classes:**\n> Fighter\n> Cleric\n> Ranger\n> Rogue\n> Wizard")
         isCreating = True
         while(isCreating):
-            msg = await client.wait_for("message", check=check, timeout=60)
+            msg = await client.wait_for("message", check=check, timeout=300)
             msg = msg.content.split()
             race = msg[0]
             job = msg[1]
@@ -146,7 +150,7 @@ async def createCharacter(ctx):
                        "list the numbers in this respective order:\nStr, Dex, Con, Int, Lck")
         setAttrs = True
         while(setAttrs):
-            msg = await client.wait_for("message", check=check, timeout=60)
+            msg = await client.wait_for("message", check=check, timeout=300)
             msg = list(map(int, msg.content.strip(",").split()))
             print(msg)
             if sorted(msg) == sorted(rolled):
@@ -188,28 +192,79 @@ async def createCharacter(ctx):
         proficiencies = [x.strip() for x in classBonusDesc(job, 1).split(",")]
         print(proficiencies)
 
+
+        player = gameMechanicClasses.Player(user, name, race, job, level, xp, xpToLevel, stats, proficiencies, money,
+                                            equipments, inventory, hitpoints, maxhitpoints, spells)
+        loaded_characters[player.name] = player
+        character_manager.SavePlayerData(player)
+        await ctx.send("Your characther, " + player.name + " has been created and ready for adventure!")
+
         #MONEY, EQUIPMENTS, AND ITEMS
         money = 50
         equipments = {"helmet":None, "armor":None, "shoes":None, "rightHand":None, "leftHand":None, "rings":None}
 
-
-
-
+        player = gameMechanicClasses.Player(user, name, race, job, level, xp, xpToLevel, stats, proficiencies, money,
+                                            equipments, inventory, hitpoints, maxhitpoints, spells)
+        loaded_characters[player.name] = player
 
     except asyncio.TimeoutError:
         await ctx.send("Timeout: Character creation canceled!")
+        del(loaded_characters[ctx.message.author])
 
     except IndexError:
         await ctx.send("Yeah, you messed up your message spacing. Try again?")
 
+@client.command()
+async def testChar(ctx, heroName=None):
+    await ctx.send(loaded_characters)
+    if heroName is not None:
+        await ctx.send(loaded_characters[heroName])
+
+
+@client.command()
+async def loadItem(ctx, itemName):
+    item = item_and_spell_manager.LoadItem(itemName)
+    loaded_items[item.name] = item
+
+
+@client.command()
+async def loadAll(ctx):
+    allItems = item_and_spell_manager.LoadAllItems()
+    for item in allItems.keys():
+        loaded_items[item] = allItems[item]
+
+    allSpells = item_and_spell_manager.LoadAllSpells()
+    for spell in allSpells.keys():
+        loaded_items[spell] = allSpells[spell]
+
+    allMonsters = character_manager.LoadAllEnemies()
+    for monster in allMonsters.keys():
+        loaded_enemies[monster] = allMonsters[monster]
+
+    await ctx.send("All your items, spells, and monsters have been added.")
+
+
+
 #ALL THE SPELLS AND ITEMS REGISTRATION
 @client.command(aliases=["rg"])
 async def register(ctx):
-    await ctx.send("Are you registering a new spell or item?")
+    await ctx.send("What are you registering? Spells, Items, or Monsters?")
     def check(m):
         return m.author == ctx.message.author
     try:
         msg = await client.wait_for("message", check=check, timeout=30)
+        if msg.content == "item":
+            await regItem(ctx)
+        elif msg.content == "spell":
+            await regSpell(ctx)
+            #TODO MAKE SPELL ADDER
+        elif msg.content == "monster":
+            await regMonster(ctx)
+            #TODO MAKE MONSTER ADDER
+        elif msg.content == "cancel":
+            return
+        else:
+            pass #TODO FOR FUTURE EXPANSION
 
 
     except asyncio.TimeoutError:
@@ -218,10 +273,190 @@ async def register(ctx):
 async def regItem(ctx):
     def check(m):
         return m.author == ctx.message.author
-    await ctx.send("Please enter your item name")
-    msg = await client.wait_for("message", check=check, timeout=30)
-    name = msg.content
-    awa
+    name = None
+    desc = None
+    itemType = None
+    stats = None
+    try:
+        await ctx.send("Please enter your item name")
+        msg = await client.wait_for("message", check=check, timeout=30)
+        name = str(msg.content)
+        await ctx.send("Item name: " + name + "\nPlease enter your item type. Your choices are:"
+                                              "\nWeapon-Bladed"
+                                              "\nWeapon-Blunt"
+                                              "\nWeapon-Needle"
+                                              "\nWeapon-Projectile"
+                                              "\nWeapon-Magic"
+                                              "\nWeapon-Fists"
+                                              "\nConsumable"
+                                              "\nArmor-Helmet"
+                                              "\nArmor-Body"
+                                              "\nArmor-Shoes")
+
+        isTyping = True
+        while isTyping:
+            msg = await client.wait_for("message", check=check, timeout=30)
+            if msg.content in ["Weapon-Bladed", "Weapon-Blunt", "Weapon-Needle", "Weapon-Projectile", "Weapon-Magic",
+                               "Weapon-Fists", "Consumable", "Armor-Helmet", "Armor-Body", "Armor-Shoes"]:
+                isTyping = False
+                itemType = msg.content
+                await ctx.send("Item Type: " + itemType)
+            else:
+                await ctx.send("Please choose a proper item type.")
+
+        await ctx.send("Give a description of your item. This can be anything from its appearance to its function. (Single message, 3 minutes)")
+        msg = await client.wait_for("message", check=check, timeout=180)
+        desc = msg.content
+
+        await ctx.send("Give your item some attributes."
+                       "\nThe format is: [3 lowercase letter code][#d# format dice roll]"
+                       "\n(example: dft2d6 is 'Damage From Throw, sum two d6 rolls')"
+                       "\nUse space when registering several different attributes to divide them."
+                       "\n(example: dft2d6 dfs1d8 is 'Damage From Throw 2d6, Damage From Swing 1d8')"
+                       "\nDo this in a single message. See various attribute codes in help.")
+        isTyping = True
+        while isTyping:
+            isTyping = False
+            msg = await client.wait_for("message", check=check, timeout=60)
+            atr = msg.content.split()
+            stats = atr
+            for i in atr:
+                if len(i)==6 and i[0:2].isalpha() and i[3].isnumeric() and i[4].isalpha() and i[5].isnumeric():
+                    pass
+                else:
+                    isTyping = True
+                    await ctx.send("Please try again. Your code format is inappropriate")
+                    break
+
+        item = gameMechanicClasses.Items(name, desc, itemType, stats)
+        loaded_items[item.name] = item
+        item_and_spell_manager.AddItem(item)
+        await ctx.send("Your item, " + loaded_items[item.name].name + " has been registered.")
+
+    except asyncio.TimeoutError:
+        await ctx.send("Timed out! Please try again!"
+                       "\nWe recommend you have one written down before you start registration!")
+    def check(m):
+        return m.author == ctx.message.author
+
+
+async def regSpell(ctx):
+    def check(m):
+        return m.author == ctx.message.author
+    name = None
+    desc = None
+    level = None
+    castTime = None
+    necessity = None
+    damage = None
+    stats = None
+    try:
+        await ctx.send("Please enter your spell name")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        name = msg.content
+        await ctx.send("Please describe the spell")
+        msg = await client.wait_for('message', check=check, timeout=300)
+        desc = msg.content
+        await ctx.send("Please enter your level")
+        msg = await client.wait_for('message', check=check, timeout=300)
+        level = int(msg.content)
+        await ctx.send("Please enter the cast time (number in turns)")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        castTime = int(msg.content)
+        await ctx.send("Choose which components are necessary for your spell: "
+                       "\nIndicate in three 0s and 1s:"
+                       "\nConcentration (No interruption during cast)"
+                       "\nSalt (Think of this as your MP)"
+                       "\nStaff, Tome, etc. (This is your required tool)"
+                       "\nFor example, if you are registering a spell that takes salt "
+                       "and requires concentration during cast, say 110")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        necessity = [int(i) for i in msg.content]
+        await ctx.send("Provide your main damage. Your main damage calculation will be ndx, "
+                       "where n is the level and x is chosen here.")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        damage = int(msg.content)
+        await ctx.send("Give your spells attributes/stats."
+                       "\nFormat is 3 alphabets, then ndm (to display dice roll)"
+                       "\nSee help for item codes.")
+        isTyping = True
+        while isTyping:
+            isTyping = False
+            msg = await client.wait_for("message", check=check, timeout=60)
+            atr = msg.content.split()
+            stats = atr
+            for i in atr:
+                if len(i)==6 and i[0:2].isalpha() and i[3].isnumeric() and i[4].isalpha() and i[5].isnumeric():
+                    pass
+                else:
+                    isTyping = True
+                    await ctx.send("Please try again. Your code format is inappropriate")
+                    break
+
+        spell = gameMechanicClasses.Spell(name, desc, level, castTime, necessity, damage, stats)
+        loaded_spells[spell.name] = spell
+        item_and_spell_manager.AddSpell(spell)
+        await ctx.send("Your spell, " + loaded_spells[spell.name].name + " has been registered.")
+
+    except asyncio.TimeoutError:
+        await ctx.send("You ran out of time! Try again.")
+
+
+async def regMonster(ctx):
+    def check(m):
+        return m.author == ctx.message.author
+    name = None
+    desc = None
+    hp = None
+    damage = None
+    other = None
+    try:
+        await ctx.send("Please name your monster")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        name = msg.content
+        await ctx.send("Please give your monster a description")
+        msg = await client.wait_for('message', check=check, timeout=300)
+        desc = msg.content
+        await ctx.send("Set your monster's hit points")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        hp = int(msg.content)
+        await ctx.send("Set your monster's attack (in dice roll style)")
+        msg = await client.wait_for('message', check=check, timeout=180)
+        damage = msg.content
+        await ctx.send("Set your monster's miscellaneous feats"
+                       "\nYou should be following the item and spell's stats format (See help)")
+        isTyping = True
+        while isTyping:
+            isTyping = False
+            msg = await client.wait_for("message", check=check, timeout=60)
+            atr = msg.content.split()
+            other = atr
+            for i in atr:
+                if len(i)==6 and i[0:2].isalpha() and i[3].isnumeric() and i[4].isalpha() and i[5].isnumeric():
+                    pass
+                else:
+                    isTyping = True
+                    await ctx.send("Please try again. Your code format is inappropriate")
+                    break
+
+        enemy = gameMechanicClasses.Enemy(name, desc, hp, damage, other)
+        loaded_enemies[enemy.name] = enemy
+        character_manager.SaveEnemy(enemy)
+        await ctx.send("Your monster, " + enemy.name + " has been registered")
+
+
+    except asyncio.TimeoutError:
+        await ctx.send("Time out! Please start again")
+
+
+@client.command()
+async def testItem(ctx, itemName=None):
+    await ctx.send(loaded_items)
+    if itemName is not None:
+        await ctx.send(loaded_characters[itemName])
+
+
+
 def raceBonusDesc(race):
     if race.lower() == "human":
         return "1 additional point in every attribute except luck."
@@ -350,3 +585,4 @@ async def sayHi(ctx):
 
 
 client.run('NTU4NDY1NTU0MDIxNzQ0NjQw.Xqu7Rg.LDDTUYl4tznCZwgH-L0aTwYJ-yY')
+

@@ -28,14 +28,15 @@ class Player:
         self.spells = spells
 
     def __str__(self):
-        printStatement = "> "+ self.user + "'s " + self.name + + "\n" + \
-                         "> Lv." + self.level + " " + self.race + " " + self.job + "\n" + \
-                         "> Strength: " + self.stats[0] + "\n" + \
-                         "> Dexterity: " + self.stats[1] + "\n" + \
-                         "> Constitution: " + self.stats[2] + "\n" + \
-                         "> Intelligence: " + self.stats[3] + "\n" + \
-                         "> Luck: " + self.stats[4] + "\n\n" + \
-                         "> HP: " + self.hitPoints + "/" + self.maxHitPoints
+        #hp = str("> HP: " + str(self.hitPoints) + "/" + str(self.maxHitPoints))
+        printStatement = "> " + self.user + "'s " + self.name + "\n" + \
+                         "> Lv." + str(self.level) + " " + self.race + " " + self.job + "\n" + \
+                         "> Strength: " + str(self.stats[0]) + "\n" + \
+                         "> Dexterity: " + str(self.stats[1]) + "\n" + \
+                         "> Constitution: " + str(self.stats[2]) + "\n" + \
+                         "> Intelligence: " + str(self.stats[3]) + "\n" + \
+                         "> Luck: " + str(self.stats[4]) + "\n\n" #+ hp
+                         #"> HP: " + str(self.hitPoints) + "/" + str(self.maxHitPoints)
 
         return printStatement
 
@@ -44,20 +45,36 @@ class Player:
 
 class Spell:
 
-    def __init__(self, name, desc, level, castTime, necessity, damage):
+    #TODO: CONSIDER EXPANDING THIS CLASS - INHERIT THEM TO SEVERAL SUBCLASSES OF SPELLS
+
+    def __init__(self, name, desc, level, castTime, necessity, damage, stats):
         self.name = name
         self.desc = desc
         self.level = level
         self.castTime = castTime
         self.necessity = necessity
         self.damage = damage
+        self.stats = stats
 
 
 class Items:
 
-    def __init__(self, name, itemType, stats):
+    def __init__(self, name, desc, itemType, stats):
         self.name = name
+        self.desc = desc
         self.itemType = itemType
         self.stats = stats
 
+    def __str__(self):
+        return "Item: " + self.name + "\nDescription: " + self.desc
+
+
+class Enemy:
+
+    def __init__(self, name, desc, hp, damage, other):
+        self.name = name
+        self.desc = desc
+        self.hp = hp
+        self.damage = damage #Might replace with "attack" in the future and use it as a list or dictionary"
+        self.other = other #Other stats that might affect combat
 
