@@ -214,6 +214,101 @@ async def createCharacter(ctx):
     except IndexError:
         await ctx.send("Yeah, you messed up your message spacing. Try again?")
 
+
+def raceBonusDesc(race):
+    if race.lower() == "human":
+        return "1 additional point in every attribute except luck."
+    elif race.lower() == "orc":
+        return "3 additional points in strength and 1 in constitution"
+    elif race.lower() == "elf":
+        return "3 additional points in intelligence and 1 point in luck"
+    elif race.lower() == "dwarf":
+        return "1 additional point in  strength and intelligence, 2 in constitution"
+    else:
+        return "- wait, what race did you pick...? Did I allow you?"
+def classBonusDesc(job, type=0):
+    """
+    :param job: Take in a string, this determines the job
+    :param type: Take in a number, this determines what the function should search for (default = 0)
+    0 = attribute points, 1 = Proficiency, (leave open for future expansion possibility)
+    :return:
+    """
+    if job.lower() == "fighter":
+        if type == 0:
+            return "1 additional point in strength and dexterity"
+        elif type == 1:
+            return "One-handed Weapon Mastery, Two-handed Weapon Mastery, Shield Mastery"
+
+    elif job.lower() == "cleric":
+        if type == 0:
+            return "1 additional point in constitution and intelligence"
+        elif type == 1:
+            return "One-handed Weapon Mastery, Shield Mastery, Persuasive Speaking"
+
+    elif job.lower() == "ranger":
+        if type == 0:
+            return "1 additional point in dexterity and constitution"
+        elif type == 1:
+            return "Ranged Weapon Mastery, Trap Handling, Persuasive Speaking"
+
+    elif job.lower() == "rogue":
+        if type == 0:
+            return "1 additional point in dexterity and luck"
+        elif type == 1:
+            return "One-handed Weapon Mastery, Two-handed Weapon Mastery, Trap Handling"
+
+    elif job.lower() == "wizard":
+        if type == 0:
+            return "1 additional point in constitution and intelligence"
+        elif type == 1:
+            return "Magic Mastery, Persuasive Speaking"
+
+    else:
+        return "- this class doesn't exist? How did this happen?"
+def rollStats():
+    stats = []
+    for i in range(0,5):
+        tray = [int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1])]
+        tray.pop(tray.index(min(tray))) #Roll 4, choose highest 3 and sum
+        stats.append(sum(tray))
+    print(stats)
+    return stats
+def addBonus(stats, race, job):
+    if race.lower() == "human":
+        stats[0] += 1
+        stats[1] += 1
+        stats[2] += 1
+        stats[3] += 1
+    elif race.lower() == "orc":
+        stats[0] += 3
+        stats[2] += 1
+    elif race.lower() == "elf":
+        stats[3] += 3
+        stats[4] += 1
+    elif race.lower() == "dwarf":
+        stats[0] += 1
+        stats[3] += 1
+        stats[2] += 2
+    else:
+        pass
+    if job.lower() == "fighter":
+        stats[0] += 1
+        stats[1] += 1
+    elif job.lower() == "cleric":
+        stats[2] += 1
+        stats[3] += 1
+    elif job.lower() == "ranger":
+        stats[1] += 1
+        stats[2] += 1
+    elif job.lower() == "rogue":
+        stats[1] += 1
+        stats[4] += 1
+    elif job.lower() == "wizard":
+        stats[2] += 1
+        stats[3] += 1
+    else:
+        pass
+
 @client.command()
 async def testChar(ctx, heroName=None):
     await ctx.send(loaded_characters)
@@ -225,6 +320,19 @@ async def testChar(ctx, heroName=None):
 async def loadItem(ctx, itemName):
     item = item_and_spell_manager.LoadItem(itemName)
     loaded_items[item.name] = item
+    await ctx.send("Item " + item.name + " has been loaded")
+
+@client.command()
+async def loadSpell(ctx, spellName):
+    spell = item_and_spell_manager.LoadSpell(spellName)
+    loaded_spells[spell.name] = spell
+    await ctx.send("Spell " + spell.name + " has been loaded")
+
+@client.command()
+async def loadEnemy(ctx, enemyName):
+    enemy = character_manager.LoadEnemy(enemyName)
+    loaded_enemies[enemy.name] = enemy
+    await ctx.send("Enemy " + enemy.name + " has been loaded")
 
 
 @client.command()
@@ -454,102 +562,6 @@ async def testItem(ctx, itemName=None):
     await ctx.send(loaded_items)
     if itemName is not None:
         await ctx.send(loaded_characters[itemName])
-
-
-
-def raceBonusDesc(race):
-    if race.lower() == "human":
-        return "1 additional point in every attribute except luck."
-    elif race.lower() == "orc":
-        return "3 additional points in strength and 1 in constitution"
-    elif race.lower() == "elf":
-        return "3 additional points in intelligence and 1 point in luck"
-    elif race.lower() == "dwarf":
-        return "1 additional point in  strength and intelligence, 2 in constitution"
-    else:
-        return "- wait, what race did you pick...? Did I allow you?"
-def classBonusDesc(job, type=0):
-    """
-    :param job: Take in a string, this determines the job
-    :param type: Take in a number, this determines what the function should search for (default = 0)
-    0 = attribute points, 1 = Proficiency, (leave open for future expansion possibility)
-    :return:
-    """
-    if job.lower() == "fighter":
-        if type == 0:
-            return "1 additional point in strength and dexterity"
-        elif type == 1:
-            return "One-handed Weapon Mastery, Two-handed Weapon Mastery, Shield Mastery"
-
-    elif job.lower() == "cleric":
-        if type == 0:
-            return "1 additional point in constitution and intelligence"
-        elif type == 1:
-            return "One-handed Weapon Mastery, Shield Mastery, Persuasive Speaking"
-
-    elif job.lower() == "ranger":
-        if type == 0:
-            return "1 additional point in dexterity and constitution"
-        elif type == 1:
-            return "Ranged Weapon Mastery, Trap Handling, Persuasive Speaking"
-
-    elif job.lower() == "rogue":
-        if type == 0:
-            return "1 additional point in dexterity and luck"
-        elif type == 1:
-            return "One-handed Weapon Mastery, Two-handed Weapon Mastery, Trap Handling"
-
-    elif job.lower() == "wizard":
-        if type == 0:
-            return "1 additional point in constitution and intelligence"
-        elif type == 1:
-            return "Magic Mastery, Persuasive Speaking"
-
-    else:
-        return "- this class doesn't exist? How did this happen?"
-def rollStats():
-    stats = []
-    for i in range(0,5):
-        tray = [int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1]), int(diceRolls.d6()[-1])]
-        tray.pop(tray.index(min(tray))) #Roll 4, choose highest 3 and sum
-        stats.append(sum(tray))
-    print(stats)
-    return stats
-def addBonus(stats, race, job):
-    if race.lower() == "human":
-        stats[0] += 1
-        stats[1] += 1
-        stats[2] += 1
-        stats[3] += 1
-    elif race.lower() == "orc":
-        stats[0] += 3
-        stats[2] += 1
-    elif race.lower() == "elf":
-        stats[3] += 3
-        stats[4] += 1
-    elif race.lower() == "dwarf":
-        stats[0] += 1
-        stats[3] += 1
-        stats[2] += 2
-    else:
-        pass
-    if job.lower() == "fighter":
-        stats[0] += 1
-        stats[1] += 1
-    elif job.lower() == "cleric":
-        stats[2] += 1
-        stats[3] += 1
-    elif job.lower() == "ranger":
-        stats[1] += 1
-        stats[2] += 1
-    elif job.lower() == "rogue":
-        stats[1] += 1
-        stats[4] += 1
-    elif job.lower() == "wizard":
-        stats[2] += 1
-        stats[3] += 1
-    else:
-        pass
 
 
 #Stupid shit
